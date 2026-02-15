@@ -1,0 +1,332 @@
+🔹 STEP-1[Feature extraction]
+What is an AST (Abstract Syntax Tree)?
+An Abstract Syntax Tree (AST) is a tree representation of the structure of source code written in a programming language.
+It shows how the code is organized syntactically (i.e., according to the grammar of the language), but without unnecessary details like brackets, semicolons, or commas.
+Simple Example
+Code:
+a = b + 2
+AST (conceptually) looks like:
+     =
+   /   \
+  a     +
+       / \
+      b   2
+Here:
+= is the root node (assignment)
++ is a child node (addition)
+a, b, 2 are leaf nodes (variables/values)
+Why is AST important?
+ASTs are used in:
+Compilers & Interpreters (to understand and execute code)
+Code analysis tools (like linters: ESLint, Pylint)
+Code formatters (like Prettier, Black)
+Static analysis & refactoring tools
+AI code tools (like code completion, bug detection)
+Big Picture (What this whole code is doing) [feature extractor.py code]
+👉 This program takes Python code as input and extracts features from it, such as:
+How many loops are used
+Maximum loop depth
+Whether recursion exists
+Whether lists/dicts/sets are used
+Number of functions
+Lines of code
+It does this using Python’s ast module and a Visitor Pattern.
+
+🔹 Part 1 — Base Visitor Class here visit_For,visit_While,all these are built in from ast.NodeVisitor
+import ast
+class CodeFeatureExtractor(ast.NodeVisitor):
+
+Here you are creating a class that will “visit” each node in the AST.
+ast.NodeVisitor is a built-in class that lets you walk through an AST node by node.
+
+🔹 Constructor (__init__)
+def __init__(self):
+    self.num_loops = 0
+    self.current_loop_depth = 0
+    self.max_loop_depth = 0
+
+    self.has_recursion = 0
+    self.function_names = set()
+    self.function_calls = []
+
+    self.uses_list = 0
+    self.uses_dict = 0
+    self.uses_set = 0
+
+    self.num_functions = 0
+
+These are variables to store extracted features:
+Variable	Meaning
+num_loops	Total number of loops
+current_loop_depth	How deep we are currently inside nested loops
+max_loop_depth	Maximum nesting of loops
+function_names	Names of all functions defined
+function_calls	Names of functions that are called
+uses_list	Whether a list is used (0/1)
+uses_dict	Whether a dictionary is used (0/1)
+uses_set	Whether a set is used (0/1)
+num_functions	Number of functions in the code
+🔹 Part 2 — Loop Detection
+For loops
+def visit_For(self, node):
+    self.num_loops += 1
+    self.current_loop_depth += 1
+    self.max_loop_depth = max(self.max_loop_depth, self.current_loop_depth)
+
+    self.generic_visit(node)
+    self.current_loop_depth -= 1
+
+
+What happens when a for loop is found in AST?
+Increase total loop count
+Increase current depth
+Update max depth if needed
+Visit everything inside the loop (generic_visit)
+After finishing, decrease depth
+
+Same for while loop:
+def visit_While(self, node):
+    self.num_loops += 1
+    self.current_loop_depth += 1
+    self.max_loop_depth = max(self.max_loop_depth, self.current_loop_depth)
+
+    self.generic_visit(node)
+    self.current_loop_depth -= 1
+
+🔹 Part 3 — Function + Recursion Detection
+When a function is defined:
+def visit_FunctionDef(self, node):
+    self.num_functions += 1
+    self.function_names.add(node.name)
+    self.generic_visit(node)
+
+Example:
+If code has:
+def two_sum(nums):
+Then:
+num_functions = 1
+function_names = {"two_sum"}
+When a function is called:
+def visit_Call(self, node):
+    if isinstance(node.func, ast.Name):
+        self.function_calls.append(node.func.id)
+    self.generic_visit(node)
+
+If the code calls:
+two_sum(arr)
+Then:
+function_calls = ["two_sum"]
+
+Checking recursion:
+self.has_recursion = int(
+    any(fn in self.function_calls for fn in self.function_names))
+
+
+If a function calls itself, then:
+has_recursion = 1
+Else 0
+
+🔹 Part 4 — Data Structure Detection
+If the code contains:
+A list → visit_List sets uses_list = 1
+A dict → visit_Dict sets uses_dict = 1
+A set → visit_Set sets uses_set = 1
+
+Example:
+seen = {}
+→ uses_dict = 1
+
+🔹 Part 5 — Feature Extraction Function
+def extract_features(code: str) -> dict:
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        raise ValueError("Invalid Python syntax")
+👉 Converts the code into an AST.
+Then:
+extractor = CodeFeatureExtractor()
+extractor.visit(tree)
+
+
+This runs all the visit methods on the AST.
+Then features are collected:
+features = {
+    "num_loops": extractor.num_loops,
+    "max_loop_depth": extractor.max_loop_depth,
+    "has_recursion": has_recursion,
+    "uses_list": extractor.uses_list,
+    "uses_dict": extractor.uses_dict,
+    "uses_set": extractor.uses_set,
+    "lines_of_code": len(code.strip().splitlines()),
+    "num_functions": extractor.num_functions
+}
+
+🔹 Test Code
+code = """
+def two_sum(nums):
+    seen = {}
+    for i in nums:
+        if i in seen:
+            return True
+        seen[i] = True
+"""
+What will be detected?
+Feature	Value	Why
+num_loops	1	One for loop
+max_loop_depth	1	No nested loops
+has_recursion	0	Function doesn’t call itself
+uses_list	0	No list used
+uses_dict	1	seen = {}
+uses_set	0	No set used
+lines_of_code	6	Code lines
+num_functions	1	Only two_sum
+
+🔹 In One Line (Simplest Explanation)
+This program converts Python code into an AST and then walks through that tree to automatically extract useful features about the code.
+
+🔹 STEP 2 — Rule-Based Time Complexity Estimation
+1️⃣ What are we building in STEP 2?
+A deterministic module that takes the extracted features and returns:
+{
+  "time_complexity": "O(n)",
+  "explanation": "Single loop detected with no nesting, resulting in linear time complexity."
+}
+This module will:
+Act as a baseline
+Provide human-readable explanations
+Serve as a fallback if ML is uncertain
+Strengthen explainability
+###“Why not directly predict complexity using ML?”
+Your answer:
+“Big-O follows well-defined structural rules. A rule-based engine provides deterministic, interpretable estimates and acts as a baseline before ML.”
+
+Inputs to This Module
+From STEP 1, we already have:
+features = {
+    "num_loops": int,
+    "max_loop_depth": int,
+    "has_recursion": 0/1,
+    "lines_of_code": int,
+    ...
+}
+
+🔹 Complexity Rules (Carefully Chosen)
+⚠️ These are heuristics, not mathematical proofs.
+That’s okay — and you should say that in interviews.
+Rule Set
+Condition	              Estimated Complexity	                  Reason
+No loops, no recursion	           O(1)	                      Constant work
+Single loop, depth = 1	           O(n)	                      Linear iteration
+Nested loops, depth = 2	           O(n²)	                  Quadratic
+Nested loops, depth ≥ 3	           O(n³) or higher	         Polynomial growth
+Recursion only	                   O(n) or O(2ⁿ)	         Depends on calls
+Loop + recursion	               O(n log n) (heuristic)	 Divide & conquer
+
+# in complexity_rules.py file the code gives us estimation of time complexity in the rule based approach mentioned above
+
+🔹 Space Complexity Rules (Simple & Defensible)
+Detected Feature	          Space Complexity	                 Explanation
+No new DS, no recursion	            O(1)	                  Constant extra space
+Uses list/dict/set	                O(n)	               Linear auxiliary storage
+Multiple DS allocations             O(n)	                     Still linear
+Recursion present	                O(n)	                       Call stack
+Recursion + DS	                    O(n)	                   Dominated by linear
+“Space complexity is estimated using heuristic rules based on auxiliary data structures and recursion. 
+Since Python abstracts memory allocation, the system reports explainable approximations rather than exact usage.”
+IMPORTANT DESIGN DECISION (We Freeze This Now)
+❌ We will NOT predict space complexity using ML
+✅ Space complexity stays rule-based only
+✅ ML will focus on efficiency classification & pattern detection
+
+🔹 STEP 3 — Dataset Creation & Labeling
+raw_code/
+These 5 problem folders are the problem-aware subset:
+two_sum/
+valid_parentheses/
+longest_substring/
+max_subarray/
+reverse_linked_list/
+and sone generic codes
+with these we create dataset
+
+They represent the problems where:
+You know the optimal solution
+You can label efficiency confidently
+You can give problem-specific feedback
+
+2️⃣ dataset.csv
+This is your ML training dataset.
+It contains:
+Feature vectors (from AST)
+Labels (efficiency + pattern)
+
+This dataset is used to:
+Train the ML models
+Compare Logistic Regression vs Random Forest
+Select the best model
+
+Problem Selection
+What we did
+Chose 5 canonical DSA problems
+Each problem chosen to expose different patterns
+
+Why
+Rich structural diversity
+Interview-relevant
+Avoids random problems
+
+Step 5: Problem-Aware Variants
+What we did
+Wrote structurally distinct solutions
+Avoided cosmetic changes
+Stopped when features differed meaningfully
+
+Why
+Prevent overfitting
+Teach ML true algorithmic patterns
+
+Step 6: Generic Pattern Examples
+What we did
+Added problem-agnostic code:
+nested loops
+recursion
+loop + recursion
+DP tables
+stacks
+
+Why
+Improve generalization
+Prevent “problem memorization”
+Teach pure structure
+
+Step 7: Label Encoding via Filenames
+What we did
+Encoded:
+pattern label
+efficiency label
+Directly in filenames
+
+Why
+Reproducible
+No manual labeling
+Interview-safe
+
+Step 8: Dataset Creation Script
+What we did
+Wrote build_dataset.py that:
+walks folders
+extracts features
+parses labels
+writes dataset.csv
+
+Why
+Offline training
+Clean ML workflow
+Scales easily
+
+Step 9: MVP Dataset Generated
+Result
+36 rows
+High-quality
+Zero duplication
+Full pipeline validated

@@ -1,0 +1,128 @@
+Problem Statement
+What problem are we solving?
+Students practicing Data Structures and Algorithms often receive binary feedback:
+Accepted / Rejected
+Correct / Wrong
+But they do not receive structured, explainable feedback about:
+The efficiency of their solution
+Whether their approach is optimal
+Why their solution is considered inefficient
+How it can be improved
+
+Manual code reviews are:
+Time-consuming
+Inconsistent
+Not scalable
+Our goal
+
+To build a web-based system that:
+Analyzes DSA solutions using static code analysis
+Estimates time complexity
+Classifies solution efficiency using interpretable ML
+Detects algorithmic patterns
+Provides explainable, actionable feedback
+
+2️⃣ Core Design Philosophy
+Key principle
+Do not execute user code. Analyze it.
+
+This project focuses on how a solution is written, not whether it passes test cases.
+Why static analysis?
+Reason	                 Explanation
+Safety	                 No untrusted code execution
+Determinism	         Same code → same analysis
+Explainability	         Decisions tied to structure
+ML-friendly	         Structured features
+This decision is intentional, not a limitation.
+
+3️⃣ System Scope (What the System DOES)
+The system WILL:
+Accept Python-based DSA solutions
+Perform AST-based static analysis
+Extract structural features:
+Loops, nesting, recursion, data structures
+Estimate time complexity using rules
+Classify efficiency using ML
+Detect algorithmic patterns
+Explain ML decisions using feature importance
+Store and display submission history
+Compare solutions against optimal approaches for selected problems
+
+4️⃣ Explicit System Boundaries (What the System DOES NOT Do)
+This section is critical for interviews.
+The system will NOT:
+Execute user code
+Judge correctness against test cases
+Support multiple programming languages
+Use black-box ML models
+Fine-tune or rely on large language models
+Handle competitive-programming edge cases
+
+Why these are excluded
+The goal is explainable learning feedback, not an online judge.
+Excluding these keeps:
+The system focused
+The ML interpretable
+The scope achievable
+
+5️⃣ Target Users
+Primary users:
+DSA learners
+CS undergraduates
+Interview-prep candidates
+
+Secondary users:
+Educators
+Coding bootcamps (future extension)
+
+6️⃣ Generic vs Problem-Aware Intelligence
+Generic Mode (Default)
+
+Applies to any Python DSA solution:
+Feature extraction
+Complexity estimation
+ML efficiency classification
+Pattern detection
+Explainability
+Feedback generation
+This makes the system problem-agnostic.
+Problem-Aware Mode (Selective)
+Activated only when a supported problem is selected:
+Supported problems:
+Two Sum
+Valid Parentheses
+Longest Substring Without Repeating Characters
+Maximum Subarray
+Reverse Linked List
+Additional capabilities:
+Compare against known optimal complexity
+Provide problem-specific improvement suggestions
+This avoids hardcoding logic for all problems.
+
+7️⃣ Architectural Boundary
+High-level flow
+User Code
+   ↓
+Static Feature Extraction (AST)
+   ↓
+Rule-Based Complexity Engine
+   ↓
+ML Models (Efficiency + Pattern)
+   ↓
+Explainability Layer (Feature Importance / SHAP)
+   ↓
+Feedback Generator
+
+Source of truth = Rules + ML
+LLMs (if added later) = presentation only
+
+8️⃣ Success Definition
+This project is successful if:
+Every prediction is explainable
+ML decisions can be defended
+Backend is modular and clean
+The system works without executing code
+You can explain every design choice calmly in interviews
+
+9️⃣ Interview-Ready Summary (Memorize This)
+“I built a static-analysis-based, explainable ML system that evaluates the efficiency and structure of DSA solutions and provides actionable feedback without executing user code.”

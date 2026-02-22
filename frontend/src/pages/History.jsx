@@ -5,10 +5,39 @@ function History() {
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/history")
-      .then((res) => res.json())
-      .then((data) => setSubmissions(data))
-      .catch((err) => console.error(err));
+    const fetchHistory = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch("http://127.0.0.1:8000/history", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        // 🔐 If unauthorized
+        if (response.status === 401) {
+          alert("Session expired. Please login again.");
+          localStorage.removeItem("token");
+          window.location.href = "/";
+          return;
+        }
+
+        const data = await response.json();
+
+        // 🛡 Safety check
+        if (Array.isArray(data)) {
+          setSubmissions(data);
+        } else {
+          setSubmissions([]);
+        }
+
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchHistory();
   }, []);
 
   const formatDate = (iso) => {
@@ -49,7 +78,7 @@ function History() {
           </thead>
 
           <tbody>
-            {submissions.map((item) => (
+            {Array.isArray(submissions) && submissions.map((item) => (
               <tr
                 key={item.id}
                 onClick={() => setSelected(item)}
@@ -84,6 +113,13 @@ function History() {
             ))}
           </tbody>
         </table>
+
+        {/* If no submissions */}
+        {Array.isArray(submissions) && submissions.length === 0 && (
+          <div style={{ marginTop: "20px", color: "#9CA3AF" }}>
+            No submissions yet.
+          </div>
+        )}
       </div>
 
       {/* Code Preview Section */}

@@ -7,7 +7,6 @@ import joblib
 import pandas as pd
 
 from backend.services.feature_extractor import extract_features
-from backend.database import save_submission
 
 
 # Load Models
@@ -79,14 +78,6 @@ def analyze_code(code: str, problem_name: str = "Generic"):
     predicted_pattern = pattern_encoder.inverse_transform([pattern_pred])[0]
 
     explanation = generate_human_explanation(features)
-
-    save_submission(
-        problem_name,
-        predicted_efficiency,
-        predicted_pattern,
-        explanation,
-        code
-    )
 
     return {
         "problem_name": problem_name,

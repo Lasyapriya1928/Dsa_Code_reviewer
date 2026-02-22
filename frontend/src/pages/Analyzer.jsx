@@ -25,15 +25,27 @@ function Analyzer() {
     setResult(null);
 
     try {
+      const token = localStorage.getItem("token");
+
       const response = await fetch("http://127.0.0.1:8000/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           code,
           problem_name: problemName,
-          save: shouldSave   // <-- IMPORTANT
+          save: shouldSave
         })
       });
+
+      if (response.status === 401) {
+        alert("Session expired. Please login again.");
+        localStorage.removeItem("token");
+        window.location.href = "/";
+        return;
+      }
 
       const data = await response.json();
       setResult(data);
@@ -87,7 +99,7 @@ function Analyzer() {
         <div style={{ display: "flex", gap: "12px" }}>
           <button
             className="secondary-btn"
-            onClick={() => analyze(false)}   // Analyze only
+            onClick={() => analyze(false)}
             disabled={loading}
           >
             {loading ? "Analyzing..." : "Analyze"}
@@ -95,7 +107,7 @@ function Analyzer() {
 
           <button
             className="primary-btn"
-            onClick={() => analyze(true)}    // Analyze + Save
+            onClick={() => analyze(true)}
             disabled={loading}
           >
             {loading ? "Saving..." : "Save"}

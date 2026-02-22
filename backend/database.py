@@ -2,8 +2,11 @@ import sqlite3
 import os
 from datetime import datetime
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "submissions.db")
+
+print("USING DATABASE AT:", DB_PATH)
+
 
 
 # -----------------------------
@@ -13,6 +16,17 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    # Create users table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            email TEXT UNIQUE,
+            hashed_password TEXT
+        )
+    """)
+
+    # Create submissions table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS submissions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +42,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
 
 
 # -----------------------------
@@ -104,6 +119,45 @@ def get_all_submissions():
         })
 
     return results
+# -----------------------------
+# User Functions
+# -----------------------------
+def create_user(username, email, hashed_password):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO users (username, email, hashed_password)
+        VALUES (?, ?, ?)
+    """, (username, email, hashed_password))
+
+    conn.commit()
+    conn.close()
+
+
+def get_user_by_username(username):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, username, email, hashed_password
+        FROM users
+        WHERE username = ?
+    """, (username,))
+
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        return {
+            "id": user[0],
+            "username": user[1],
+            "email": user[2],
+            "hashed_password": user[3]
+        }
+
+    return None
+
 if __name__ == "__main__":
     init_db()
     print("Database initialized successfully.")

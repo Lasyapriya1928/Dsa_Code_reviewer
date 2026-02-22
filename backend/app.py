@@ -1,29 +1,146 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
+from passlib.context import CryptContext
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+from fastapi.security import HTTPBearer
 
 from backend.analyzer import analyze_code
-from backend.database import get_all_submissions
-
+from backend.database import (
+    get_all_submissions,
+    create_user,
+    get_user_by_username,
+    save_submission   # ✅ ADD THIS
+)
 
 app = FastAPI(title="AlgoScope API")
 
+# -----------------------------
+# Security Settings
+# -----------------------------
+SECRET_KEY = "mysecretkey"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(credentials = Depends(security)):
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        return username
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# -----------------------------
+# Request Models
+# -----------------------------
 class CodeRequest(BaseModel):
     code: str
     problem_name: str
+    save: bool = False
 
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+# -----------------------------
+# Routes
+# -----------------------------
 @app.get("/")
 def root():
     return {"message": "AlgoScope API running"}
 
-@app.post("/analyze")
-def analyze(request: CodeRequest):
-    return analyze_code(request.code, request.problem_name)
 
+@app.post("/register")
+def register(request: RegisterRequest):
+    existing_user = get_user_by_username(request.username)
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    hashed_password = pwd_context.hash(request.password)
+    create_user(request.username, request.email, hashed_password)
+
+    return {"message": "User registered successfully"}
+
+
+@app.post("/login")
+def login(request: LoginRequest):
+
+    user = get_user_by_username(request.username)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    if not pwd_context.verify(request.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    access_token = create_access_token(
+        data={"sub": user["username"]}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
+@app.post("/analyze")
+def analyze(
+    request: CodeRequest,
+    current_user: str = Depends(get_current_user)
+):
+    result = analyze_code(
+        request.code,
+        request.problem_name
+    )
+
+    # ✅ Save only when Save button is clicked
+    if request.save and not result.get("error"):
+        save_submission(
+            request.problem_name,
+            result["predicted_efficiency"],   # correct order
+            result["predicted_pattern"],      # correct order
+            result["explanation"],            # explanation list
+            request.code                     # code LAST
+        )
+
+    return result
 @app.get("/history")
-def history():
+def history(current_user: str = Depends(get_current_user)):
     return get_all_submissions()
 
+
+# -----------------------------
+# CORS
+# -----------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],

@@ -21,21 +21,35 @@ def parse_labels_from_filename(filename: str):
     name = filename.replace(".py", "")
     parts = name.split("_")
 
-    # Problem-aware format
-    if len(parts) >= 4:
-        pattern_label = parts[-3]
-        efficiency_label = parts[-2]
-        return pattern_label, efficiency_label
+    # Efficiency is always second last
+    efficiency_label = parts[-2]
 
-    # Generic format
-    elif len(parts) == 3:
-        pattern_label = parts[0]
-        efficiency_label = parts[1]
-        return pattern_label, efficiency_label
+    # Join all words except last two (efficiency + index)
+    pattern_raw = "_".join(parts[:-2]).lower()
+
+    # 🔥 Normalize pattern labels
+    if "bruteforce" in pattern_raw or "nested" in pattern_raw:
+        pattern_label = "brute_force"
+
+    elif "dp" in pattern_raw or "table" in pattern_raw:
+        pattern_label = "dynamic_programming"
+
+    elif "hash" in pattern_raw or "dict" in pattern_raw or "counter" in pattern_raw:
+        pattern_label = "hashing"
+
+    elif "stack" in pattern_raw:
+        pattern_label = "stack"
+
+    elif "two" in pattern_raw or "pointer" in pattern_raw:
+        pattern_label = "two_pointer"
+
+    elif "recurs" in pattern_raw or "helper" in pattern_raw:
+        pattern_label = "recursion"
 
     else:
-        raise ValueError(f"Invalid filename format: {filename}")
+        pattern_label = "other"
 
+    return pattern_label, efficiency_label
 
 def build_dataset():
     rows = []

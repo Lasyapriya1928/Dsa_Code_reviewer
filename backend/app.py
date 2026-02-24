@@ -1,25 +1,44 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from fastapi.security import HTTPBearer
+import sqlite3
+from collections import Counter
 
 from analyzer import analyze_code
 from database import (
     get_all_submissions,
     create_user,
     get_user_by_username,
-    save_submission   # ✅ ADD THIS
+    save_submission
 )
 
 app = FastAPI(title="AlgoScope API")
 
 # -----------------------------
+# CORS (PLACE THIS AT TOP)
+# -----------------------------
+
+origins = [
+    "http://localhost:3000",
+    "https://dsa-code-reviewer.vercel.app"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# -----------------------------
 # Security Settings
 # -----------------------------
+
 SECRET_KEY = "mysecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
@@ -35,7 +54,7 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_current_user(credentials = Depends(security)):
+def get_current_user(credentials=Depends(security)):
     token = credentials.credentials
 
     try:
@@ -50,9 +69,11 @@ def get_current_user(credentials = Depends(security)):
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+
 # -----------------------------
 # Request Models
 # -----------------------------
+
 class CodeRequest(BaseModel):
     code: str
     problem_name: str
@@ -73,6 +94,7 @@ class LoginRequest(BaseModel):
 # -----------------------------
 # Routes
 # -----------------------------
+
 @app.get("/")
 def root():
     return {"message": "AlgoScope API running"}
@@ -91,11 +113,8 @@ def register(request: RegisterRequest = Body(...)):
     return {"message": "User registered successfully"}
 
 
-from fastapi import Body
-
 @app.post("/login")
 def login(request: LoginRequest = Body(...)):
-
     user = get_user_by_username(request.username)
 
     if not user:
@@ -104,9 +123,7 @@ def login(request: LoginRequest = Body(...)):
     if not pwd_context.verify(request.password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    access_token = create_access_token(
-        data={"sub": user["username"]}
-    )
+    access_token = create_access_token(data={"sub": user["username"]})
 
     return {
         "access_token": access_token,
@@ -115,52 +132,28 @@ def login(request: LoginRequest = Body(...)):
 
 
 @app.post("/analyze")
-def analyze(
-    request: CodeRequest,
-    current_user: str = Depends(get_current_user)
-):
-    result = analyze_code(
-        request.code,
-        request.problem_name
-    )
+def analyze(request: CodeRequest, current_user: str = Depends(get_current_user)):
+    result = analyze_code(request.code, request.problem_name)
 
-    # ✅ Save only when Save button is clicked
     if request.save and not result.get("error"):
         save_submission(
             request.problem_name,
-            result["predicted_efficiency"],   # correct order
-            result["predicted_pattern"],      # correct order
-            result["explanation"],            # explanation list
-            request.code                     # code LAST
+            result["predicted_efficiency"],
+            result["predicted_pattern"],
+            result["explanation"],
+            request.code
         )
 
     return result
+
+
 @app.get("/history")
 def history(current_user: str = Depends(get_current_user)):
     return get_all_submissions()
 
 
-# -----------------------------
-# CORS
-# -----------------------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# --------------------------------------
-# ANALYTICS ROUTE (SAFE VERSION)
-# --------------------------------------
-
-import sqlite3
-from collections import Counter
-
 @app.get("/analytics")
 def get_analytics():
-
     conn = sqlite3.connect("backend/submissions.db")
     cursor = conn.cursor()
 

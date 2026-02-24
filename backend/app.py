@@ -148,3 +148,42 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --------------------------------------
+# ANALYTICS ROUTE (SAFE VERSION)
+# --------------------------------------
+
+import sqlite3
+from collections import Counter
+
+@app.get("/analytics")
+def get_analytics():
+
+    conn = sqlite3.connect("backend/submissions.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT problem_name, predicted_pattern, predicted_efficiency FROM submissions")
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    if not rows:
+        return {
+            "total_submissions": 0,
+            "unique_problems": 0,
+            "pattern_distribution": {},
+            "efficiency_distribution": {}
+        }
+
+    total_submissions = len(rows)
+    unique_problems = len(set(r[0] for r in rows))
+
+    pattern_counts = Counter(r[1] for r in rows)
+    efficiency_counts = Counter(r[2] for r in rows)
+
+    return {
+        "total_submissions": total_submissions,
+        "unique_problems": unique_problems,
+        "pattern_distribution": dict(pattern_counts),
+        "efficiency_distribution": dict(efficiency_counts)
+    }

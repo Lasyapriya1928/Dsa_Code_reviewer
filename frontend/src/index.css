@@ -159,3 +159,13 @@ body {
 .secondary-btn:hover {
   background: rgba(59, 130, 246, 0.1);
 }
+
+.card {
+  background: #1e1e2f;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  min-width: 200px;
+  flex: 1;
+  text-align: center;
+}

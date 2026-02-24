@@ -4,7 +4,7 @@ function Analytics() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/analytics")
+    fetch("https://dsa-code-reviewer.onrender.com/analytics")
       .then(res => res.json())
       .then(resData => setData(resData))
       .catch(err => console.error("Error fetching analytics:", err));

@@ -79,7 +79,7 @@ def root():
 
 
 @app.post("/register")
-def register(request: RegisterRequest):
+def register(request: RegisterRequest = Body(...)):
     existing_user = get_user_by_username(request.username)
 
     if existing_user:
@@ -91,8 +91,10 @@ def register(request: RegisterRequest):
     return {"message": "User registered successfully"}
 
 
+from fastapi import Body
+
 @app.post("/login")
-def login(request: LoginRequest):
+def login(request: LoginRequest = Body(...)):
 
     user = get_user_by_username(request.username)
 

@@ -9,7 +9,7 @@ function History() {
       try {
         const token = localStorage.getItem("token");
 
-        const response = await fetch("http://127.0.0.1:8000/history", {
+        const response = await fetch("https://dsa-code-reviewer.onrender.com/history", {
           headers: {
             "Authorization": `Bearer ${token}`
           }

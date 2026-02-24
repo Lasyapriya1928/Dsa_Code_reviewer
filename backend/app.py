@@ -7,8 +7,8 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from fastapi.security import HTTPBearer
 
-from backend.analyzer import analyze_code
-from backend.database import (
+from analyzer import analyze_code
+from database import (
     get_all_submissions,
     create_user,
     get_user_by_username,

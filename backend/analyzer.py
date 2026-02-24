@@ -6,7 +6,7 @@ import os
 import joblib
 import pandas as pd
 
-from backend.services.feature_extractor import extract_features
+from services.feature_extractor import extract_features
 
 
 # --------------------------------------------------

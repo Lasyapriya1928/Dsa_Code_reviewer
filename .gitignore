@@ -1,23 +1,12 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
+*.db
 .env
-venv/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# ML models
-backend/models/*.pkl
 
 # Node
-frontend/node_modules/
+node_modules/
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+# Build
+build/
+dist/

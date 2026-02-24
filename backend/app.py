@@ -22,10 +22,7 @@ app = FastAPI(title="AlgoScope API")
 # CORS (PLACE THIS AT TOP)
 # -----------------------------
 
-origins = [
-    "http://localhost:3000",
-    "https://dsa-code-reviewer.vercel.app"
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,

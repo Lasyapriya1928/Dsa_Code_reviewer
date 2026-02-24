@@ -1,12 +1,10 @@
-def top_k_frequent(nums, k):
-    freq = {}
-
-    for num in nums:
-        freq[num] = freq.get(num, 0) + 1
-
-    sorted_items = sorted(freq.items(), key=lambda x: x[1], reverse=True)
-
-    return [item[0] for item in sorted_items[:k]]
-
-
-print(top_k_frequent([1,1,1,2,2,3], 2))
+def subarray_sum(nums, target):
+    prefix = 0
+    seen = {0: 1}
+    count = 0
+    for n in nums:
+        prefix += n
+        if prefix - target in seen:
+            count += seen[prefix - target]
+        seen[prefix] = seen.get(prefix, 0) + 1
+    return count

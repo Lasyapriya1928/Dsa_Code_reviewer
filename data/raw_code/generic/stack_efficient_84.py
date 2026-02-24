@@ -1,0 +1,13 @@
+def evaluate_postfix_alt(tokens):
+    stack = []
+    ops = {"+": lambda a, b: a + b,
+           "-": lambda a, b: a - b,
+           "*": lambda a, b: a * b}
+    for token in tokens:
+        if token in ops:
+            b = stack.pop()
+            a = stack.pop()
+            stack.append(ops[token](a, b))
+        else:
+            stack.append(int(token))
+    return stack[-1]

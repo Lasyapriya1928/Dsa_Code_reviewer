@@ -1,17 +1,17 @@
-def remove_k_digits(num, k):
+def decode_string(s):
     stack = []
-
-    for digit in num:
-        while stack and k > 0 and stack[-1] > digit:
-            stack.pop()
-            k -= 1
-        stack.append(digit)
-
-    while k > 0:
-        stack.pop()
-        k -= 1
-
-    return "".join(stack).lstrip("0") or "0"
-
-
-print(remove_k_digits("1432219", 3))
+    current = ""
+    num = 0
+    for ch in s:
+        if ch.isdigit():
+            num = num * 10 + int(ch)
+        elif ch == '[':
+            stack.append((current, num))
+            current = ""
+            num = 0
+        elif ch == ']':
+            prev, count = stack.pop()
+            current = prev + current * count
+        else:
+            current += ch
+    return current

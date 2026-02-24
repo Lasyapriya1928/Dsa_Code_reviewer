@@ -1,13 +1,8 @@
-def hashing_anagram(s, t):
-    if len(s) != len(t):
-        return False
-    count = {}
-    for char in s:
-        count[char] = count.get(char, 0) + 1
-    for char in t:
-        if char not in count:
-            return False
-        count[char] -= 1
-    return True
-
-#Pattern: hashing
+def first_unique_char(s):
+    table = {}
+    for ch in s:
+        table[ch] = table.get(ch, 0) + 1
+    for idx, ch in enumerate(s):
+        if table[ch] == 1:
+            return idx
+    return -1

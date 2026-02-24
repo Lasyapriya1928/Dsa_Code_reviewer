@@ -1,9 +1,8 @@
-def hashing_two_sum(nums, target):
+def two_sum(nums, target):
     seen = {}
-    for i, num in enumerate(nums):
-        if target - num in seen:
-            return True
-        seen[num] = i
-    return False
-
-#Pattern: hashing
+    for i, val in enumerate(nums):
+        diff = target - val
+        if diff in seen:
+            return [seen[diff], i]
+        seen[val] = i
+    return []

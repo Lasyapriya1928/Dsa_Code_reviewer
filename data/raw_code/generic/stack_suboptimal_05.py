@@ -1,14 +1,8 @@
-def stack_evaluate_rpn(tokens):
+def remove_adjacent_duplicates(s):
     stack = []
-
-    for token in tokens:
-        if token in "+-*/":
-            b = stack.pop()
-            a = stack.pop()
-            stack.append(eval(f"{a}{token}{b}"))
+    for ch in s:
+        if stack and stack[-1] == ch:
+            stack.pop()
         else:
-            stack.append(int(token))
-
-    return stack[0]
-
-#Pattern: stack
+            stack.append(ch)
+    return "".join(stack)

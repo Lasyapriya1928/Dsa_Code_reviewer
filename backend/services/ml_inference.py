@@ -4,8 +4,10 @@
 
 import os
 import joblib
-import numpy as np
 import pandas as pd
+
+# NEW: Import explanation engine
+from services.explanation_engine import generate_explanation
 
 # --------------------------------------------------
 # Load Models
@@ -26,7 +28,6 @@ eff_encoder = joblib.load(EFF_ENCODER_PATH)
 pattern_model = joblib.load(PATTERN_MODEL_PATH)
 pattern_encoder = joblib.load(PATTERN_ENCODER_PATH)
 
-
 # --------------------------------------------------
 # Feature Order (MUST match training order)
 # --------------------------------------------------
@@ -40,11 +41,13 @@ FEATURE_COLS = [
     "uses_set",
     "lines_of_code",
     "num_functions",
-    "loop_density",
     "uses_append",
     "uses_pop",
+    "num_if_statements",
+    "uses_2d_list",
+    "uses_sorted",
+    "uses_subscript_assignment",
 ]
-
 
 # --------------------------------------------------
 # Efficiency Prediction
@@ -60,13 +63,9 @@ def predict_efficiency(features: dict):
     pred_encoded = eff_model.predict(X_input)[0]
     pred_label = eff_encoder.inverse_transform([pred_encoded])[0]
 
-    explanation = generate_explanation(features)
-
     return {
-        "predicted_efficiency": pred_label,
-        "explanation": explanation
+        "predicted_efficiency": pred_label
     }
-
 
 # --------------------------------------------------
 # Pattern Prediction
@@ -82,40 +81,10 @@ def predict_pattern(features: dict):
     pred_encoded = pattern_model.predict(X_input)[0]
     pred_label = pattern_encoder.inverse_transform([pred_encoded])[0]
 
-    return pred_label
+    # NEW: Call explanation engine
+    explanation = generate_explanation(features, pred_label)
 
-
-# --------------------------------------------------
-# Human Explanation Logic
-# --------------------------------------------------
-
-def generate_explanation(features):
-
-    explanation = []
-
-    if features["max_loop_depth"] >= 2:
-        explanation.append(
-            "Nested loops were detected, which significantly increases time complexity."
-        )
-
-    if features["num_loops"] > 1:
-        explanation.append(
-            "Multiple loops contribute to higher computational cost."
-        )
-
-    if features["has_recursion"] == 1:
-        explanation.append(
-            "Recursive calls were detected, which may increase runtime overhead."
-        )
-
-    if features["lines_of_code"] > 20:
-        explanation.append(
-            "The solution is relatively long, which may indicate inefficiency."
-        )
-
-    if not explanation:
-        explanation.append(
-            "The structure of the code appears efficient and well-optimized."
-        )
-
-    return explanation
+    return {
+        "predicted_pattern": pred_label,
+        "explanation": explanation
+    }

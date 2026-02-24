@@ -151,7 +151,7 @@ def history(current_user: str = Depends(get_current_user)):
 
 @app.get("/analytics")
 def get_analytics():
-    conn = sqlite3.connect("backend/submissions.db")
+    conn = sqlite3.connect("submissions.db")
     cursor = conn.cursor()
 
     cursor.execute("SELECT problem_name, predicted_pattern, predicted_efficiency FROM submissions")

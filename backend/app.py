@@ -1,3 +1,4 @@
+from database import init_db
 from fastapi import FastAPI, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
@@ -17,20 +18,15 @@ from database import (
 )
 
 app = FastAPI(title="AlgoScope API")
-
+init_db()
 # -----------------------------
 # CORS (PLACE THIS AT TOP)
 # -----------------------------
 
-origins = [
-    "http://localhost:3000",
-    "https://dsa-code-reviewer.vercel.app"
-]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex="https://.*\.vercel\.app",
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

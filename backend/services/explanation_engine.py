@@ -3,29 +3,45 @@ def generate_explanation(features: dict, predicted_pattern: str) -> list:
 
     # ---------- BRUTE FORCE ----------
     if predicted_pattern == "brute_force":
+
         if features.get("num_loops", 0) >= 2:
             reasons.append(
-                f"Detected {features['num_loops']} loops in the code"
+                f"{features['num_loops']} loops detected in the code"
             )
 
         if features.get("max_loop_depth", 0) >= 2:
             reasons.append(
-                f"Maximum loop nesting depth is {features['max_loop_depth']}"
+                f"Nested loops detected (depth = {features['max_loop_depth']}) suggesting quadratic complexity"
             )
 
         if not features.get("has_recursion", False):
-            reasons.append("No recursive calls detected")
+            reasons.append("No recursion detected")
+
+        if not features.get("uses_dict", False):
+            reasons.append("No hashing structures used")
 
     # ---------- DYNAMIC PROGRAMMING ----------
     elif predicted_pattern == "dynamic_programming":
-        if features.get("uses_2d_list", False):
-            reasons.append("2D table structure detected (common in DP)")
 
-        if features.get("uses_subscript_assignment", False):
-            reasons.append("Indexed state updates detected")
+        # Strong DP signals
+        if features.get("uses_2d_list", False):
+            reasons.append("2D DP table detected")
+
+        if features.get("nested_subscript_usage", 0) > 0:
+            reasons.append("Nested index access like dp[i][j] detected")
+
+        if (
+            features.get("uses_subscript_assignment", False)
+            and features.get("max_loop_depth", 0) >= 1
+            and (
+                features.get("uses_2d_list", False)
+                or features.get("nested_subscript_usage", 0) > 0
+            )
+        ):
+            reasons.append("State transition updates inside loops detected")
 
         if features.get("num_if_statements", 0) > 0:
-            reasons.append("Conditional state transitions found")
+            reasons.append("Conditional transitions found (common in DP)")
 
     # ---------- HASHING ----------
     elif predicted_pattern == "hashing":
@@ -53,7 +69,7 @@ def generate_explanation(features: dict, predicted_pattern: str) -> list:
         if features.get("num_loops", 0) >= 1:
             reasons.append("Loop-based traversal detected")
 
-        reasons.append("Pointer-style index movement pattern observed")
+        reasons.append("Two index variables likely moving through the array")
 
     # ---------- FALLBACK ----------
     if not reasons:

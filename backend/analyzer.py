@@ -22,7 +22,7 @@ eff_encoder = joblib.load(os.path.join(MODEL_DIR, "efficiency_label_encoder.pkl"
 pattern_model = joblib.load(os.path.join(MODEL_DIR, "pattern_model.pkl"))
 pattern_encoder = joblib.load(os.path.join(MODEL_DIR, "pattern_label_encoder.pkl"))
 
-# 🔥 NEW — Load saved feature order
+# Load saved feature order
 feature_order = joblib.load(os.path.join(MODEL_DIR, "feature_columns.pkl"))
 
 
@@ -42,6 +42,7 @@ def generate_human_explanation(features, predicted_efficiency):
         explanation.append(
             "Nested loops indicate potential quadratic time complexity (approximately O(n²))."
         )
+
     elif features.get("num_loops", 0) == 1:
         explanation.append(
             "A single loop suggests linear time complexity (approximately O(n))."
@@ -80,26 +81,35 @@ def generate_human_explanation(features, predicted_efficiency):
 
 
 # --------------------------------------------------
-# Hybrid Pattern Override (Light Rule Engine)
+# Hybrid Pattern Override (Rule Engine)
 # --------------------------------------------------
 
 def hybrid_pattern_override(features, model_prediction):
 
+    # 1️⃣ Detect brute force FIRST
+    if features.get("max_loop_depth", 0) >= 2 and not features.get("uses_dict", 0):
+        return "brute_force"
+
+    # 2️⃣ Recursion
     if features.get("has_recursion", 0) == 1 and features.get("num_loops", 0) == 0:
         return "recursion"
 
+    # 3️⃣ Stack
     if features.get("uses_append", 0) == 1 and features.get("uses_pop", 0) == 1:
         return "stack"
 
+    # 4️⃣ Hashing
     if features.get("uses_dict", 0) == 1:
         return "hashing"
 
+    # 5️⃣ Dynamic Programming (stricter detection)
     if (
-        features.get("uses_list", 0) == 1 and
-        features.get("uses_subscript_assignment", 0) == 1
+        features.get("uses_2d_list", 0) == 1
+        or features.get("nested_subscript_usage", 0) > 0
     ):
         return "dynamic_programming"
 
+    # fallback to ML
     return model_prediction
 
 
@@ -117,12 +127,12 @@ def analyze_code(code: str, problem_name: str = "Generic"):
     except:
         return {"error": "Invalid Python syntax."}
 
-    # 🔥 Ensure all required features exist
+    # Ensure all required features exist
     for feature in feature_order:
         if feature not in features:
             features[feature] = 0
 
-    # 🔥 Create DataFrame in correct order
+    # Create DataFrame in correct order
     X_input = pd.DataFrame(
         [[features[f] for f in feature_order]],
         columns=feature_order
@@ -134,6 +144,13 @@ def analyze_code(code: str, problem_name: str = "Generic"):
     eff_pred = eff_model.predict(X_input)[0]
     predicted_efficiency = eff_encoder.inverse_transform([eff_pred])[0]
 
+    # Override efficiency with loop rules
+    if features.get("max_loop_depth", 0) >= 2:
+        predicted_efficiency = "inefficient"
+
+    elif features.get("max_loop_depth", 0) == 1:
+        predicted_efficiency = "suboptimal"
+
     # -----------------------------
     # Pattern Prediction (ML)
     # -----------------------------
@@ -141,7 +158,7 @@ def analyze_code(code: str, problem_name: str = "Generic"):
     ml_pattern = pattern_encoder.inverse_transform([pattern_pred])[0]
 
     # -----------------------------
-    # Hybrid Override Applied
+    # Hybrid Override
     # -----------------------------
     predicted_pattern = hybrid_pattern_override(features, ml_pattern)
 

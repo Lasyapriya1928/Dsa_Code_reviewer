@@ -1,12 +1,11 @@
 import sqlite3
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "submissions.db")
 
 print("USING DATABASE AT:", DB_PATH)
-
 
 
 # -----------------------------
@@ -44,7 +43,6 @@ def init_db():
     conn.close()
 
 
-
 # -----------------------------
 # Save Submission
 # -----------------------------
@@ -59,6 +57,9 @@ def save_submission(
     cursor = conn.cursor()
 
     explanation_text = " | ".join(explanation_list)
+
+    # Convert UTC → IST
+    timestamp = (datetime.utcnow() + timedelta(hours=5, minutes=30)).isoformat()
 
     cursor.execute("""
         INSERT INTO submissions (
@@ -76,7 +77,7 @@ def save_submission(
         predicted_pattern,
         explanation_text,
         code,
-        datetime.now().isoformat()
+        timestamp
     ))
 
     conn.commit()
@@ -119,6 +120,8 @@ def get_all_submissions():
         })
 
     return results
+
+
 # -----------------------------
 # User Functions
 # -----------------------------
@@ -157,6 +160,7 @@ def get_user_by_username(username):
         }
 
     return None
+
 
 if __name__ == "__main__":
     init_db()

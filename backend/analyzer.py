@@ -102,6 +102,14 @@ def hybrid_pattern_override(features, model_prediction):
     if features.get("max_loop_depth", 0) >= 2:
         return "brute_force"
 
+    # dynamic programming  ← move this up
+    if (
+        features.get("uses_2d_list", 0) == 1
+        or features.get("nested_subscript_usage", 0) > 0
+        or features.get("uses_subscript_assignment", 0) == 1
+    ):
+        return "dynamic_programming"
+
     # two pointer
     if (
         features.get("num_loops", 0) == 1
@@ -115,14 +123,6 @@ def hybrid_pattern_override(features, model_prediction):
         )
     ):
         return "two_pointer"
-
-    # dynamic programming
-    if (
-        features.get("uses_2d_list", 0) == 1
-        or features.get("nested_subscript_usage", 0) > 0
-        or features.get("uses_subscript_assignment", 0) == 1
-    ):
-        return "dynamic_programming"
 
     return model_prediction
 # --------------------------------------------------

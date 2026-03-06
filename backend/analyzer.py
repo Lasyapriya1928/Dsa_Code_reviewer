@@ -86,33 +86,45 @@ def generate_human_explanation(features, predicted_efficiency):
 
 def hybrid_pattern_override(features, model_prediction):
 
-    # 1️⃣ Detect brute force FIRST
-    if features.get("max_loop_depth", 0) >= 2 and not features.get("uses_dict", 0):
-        return "brute_force"
-
-    # 2️⃣ Recursion
+    # recursion
     if features.get("has_recursion", 0) == 1 and features.get("num_loops", 0) == 0:
         return "recursion"
 
-    # 3️⃣ Stack
+    # stack
     if features.get("uses_append", 0) == 1 and features.get("uses_pop", 0) == 1:
         return "stack"
 
-    # 4️⃣ Hashing
+    # hashing
     if features.get("uses_dict", 0) == 1:
         return "hashing"
 
-    # 5️⃣ Dynamic Programming (stricter detection)
+    # brute force
+    if features.get("max_loop_depth", 0) >= 2:
+        return "brute_force"
+
+    # two pointer
+    if (
+        features.get("num_loops", 0) == 1
+        and features.get("max_loop_depth", 0) == 1
+        and features.get("uses_dict", 0) == 0
+        and features.get("uses_set", 0) == 0
+        and features.get("uses_2d_list", 0) == 0
+        and (
+            features.get("uses_list", 0) == 1
+            or features.get("nested_subscript_usage", 0) > 0
+        )
+    ):
+        return "two_pointer"
+
+    # dynamic programming
     if (
         features.get("uses_2d_list", 0) == 1
         or features.get("nested_subscript_usage", 0) > 0
+        or features.get("uses_subscript_assignment", 0) == 1
     ):
         return "dynamic_programming"
 
-    # fallback to ML
     return model_prediction
-
-
 # --------------------------------------------------
 # Main Analyze Function
 # --------------------------------------------------
